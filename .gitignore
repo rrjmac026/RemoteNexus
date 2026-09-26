@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Local environment and logs
+.env
+.env.*
+!.env.example
+*.log
+
+# The Flutter project has its own .gitignore for Dart and build output.

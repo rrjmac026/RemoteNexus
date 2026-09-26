@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+psutil
+python-multipart
+mss
+pyautogui
+pillow
+websockets

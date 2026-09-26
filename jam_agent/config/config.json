@@ -1,0 +1,9 @@
+{
+    "host": "0.0.0.0",
+    "port": 8080,
+    "computer_name": "JAM-PC",
+    "shared_directory": "F:\\JAM-Server\\Shared",
+    "upload_directory": "F:\\JAM-Server\\Uploads",
+    "authentication_enabled": true,
+    "remote_access_enabled": false
+}
