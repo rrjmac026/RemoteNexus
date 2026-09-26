@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/authentication_service.dart';
-import '../services/connection_service.dart';
+import '../services/storage_service.dart';
 import 'system_screen.dart';
 
 class PairingScreen extends StatefulWidget {
-  const PairingScreen({super.key});
+  final String ip;
+  final String port;
+
+  const PairingScreen({super.key, required this.ip, required this.port});
 
   @override
   State<PairingScreen> createState() => _PairingScreenState();
@@ -25,7 +28,11 @@ class _PairingScreenState extends State<PairingScreen> {
 
   Future<void> _startPairing() async {
     try {
-      final result = await AuthenticationService.requestPairing('JAM Android');
+      final result = await AuthenticationService.requestPairing(
+        widget.ip,
+        widget.port,
+        'JAM Android',
+      );
       setState(() {
         _code = result.code;
         _requestId = result.requestId;
@@ -39,11 +46,16 @@ class _PairingScreenState extends State<PairingScreen> {
 
   Future<void> _poll() async {
     if (_requestId == null) return;
-    final result = await AuthenticationService.checkPairingStatus(_requestId!);
+    final result = await AuthenticationService.checkPairingStatus(
+      widget.ip,
+      widget.port,
+      _requestId!,
+    );
 
     if (result['status'] == 'approved') {
       _pollTimer?.cancel();
-      ConnectionService.setToken(result['token']!);
+      await StorageService.saveToken(result['token']!);
+      await StorageService.saveConnection(widget.ip, widget.port);
       if (mounted) setState(() => _status = 'approved');
     } else if (result['status'] == 'denied') {
       _pollTimer?.cancel();
@@ -84,12 +96,12 @@ class _PairingScreenState extends State<PairingScreen> {
                 const Text('Paired successfully!', style: TextStyle(fontSize: 18)),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () {
+                onPressed: () {
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const SystemScreen()),
+                    MaterialPageRoute(builder: (_) => const SystemScreen()),
                     );
-                  },
-                  child: const Text('Continue'),
+                },
+                child: const Text('Continue'),
                 ),
               ],
               if (_status == 'denied') ...[

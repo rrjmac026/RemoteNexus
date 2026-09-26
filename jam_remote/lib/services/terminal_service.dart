@@ -1,4 +1,5 @@
-import '../services/connection_service.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class TerminalResult {
   final bool success;
@@ -9,9 +10,20 @@ class TerminalResult {
 }
 
 class TerminalService {
-  static Future<TerminalResult> sendCommand(String command) async {
+  static Future<TerminalResult> sendCommand(
+      String ip, String port, String token, String command) async {
+    final url = Uri.parse('http://$ip:$port/api/terminal');
     try {
-      final data = await ConnectionService.post('/api/terminal', {'command': command});
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'command': command}),
+      ).timeout(const Duration(seconds: 5));
+
+      final data = jsonDecode(response.body);
 
       if (data['success'] == true) {
         final output = data['data']['output'] as String? ?? '';

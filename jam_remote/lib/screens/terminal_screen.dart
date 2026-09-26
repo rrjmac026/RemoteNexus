@@ -60,9 +60,17 @@ class _TerminalScreenState extends State<TerminalScreen> {
       return;
     }
 
-    
+    if (_ip == null || _port == null || _token == null) {
+      setState(() {
+        _lines.add('Not paired. Go back and pair a device first.');
+        _lines.add('');
+        _busy = false;
+      });
+      _scrollToBottom();
+      return;
+    }
 
-    final result = await TerminalService.sendCommand(command);
+    final result = await TerminalService.sendCommand(_ip!, _port!, _token!, command);
 
     setState(() {
       _lines.add(result.output);

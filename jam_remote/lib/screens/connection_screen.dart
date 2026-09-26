@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/connection_service.dart';
+import '../services/api_service.dart';
 import 'pairing_screen.dart';
 
 class ConnectionScreen extends StatefulWidget {
@@ -22,19 +22,10 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       _isConnected = null;
     });
 
-    final ip = _ipController.text.trim();
-    final port = _portController.text.trim();
-
-    // Set connection first so the health check itself goes through ConnectionService.
-    await ConnectionService.setLocalConnection(ip, port);
-
-    bool success;
-    try {
-      final data = await ConnectionService.get('/api/health');
-      success = data['success'] == true;
-    } catch (e) {
-      success = false;
-    }
+    final success = await ApiService.checkHealth(
+      _ipController.text.trim(),
+      _portController.text.trim(),
+    );
 
     setState(() {
       _isConnecting = false;
@@ -44,7 +35,10 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   void _goToPairing() {
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => const PairingScreen(),
+      builder: (_) => PairingScreen(
+        ip: _ipController.text.trim(),
+        port: _portController.text.trim(),
+      ),
     ));
   }
 

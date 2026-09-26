@@ -33,12 +33,25 @@ class _SystemScreenState extends State<SystemScreen> {
   }
 
   Future<void> _init() async {
+    _ip = await StorageService.getSavedIp();
+    _port = await StorageService.getSavedPort();
+    _token = await StorageService.getToken();
+
+    if (_ip == null || _port == null || _token == null) {
+      setState(() {
+        _initialLoading = false;
+        _error = 'Not paired. Go back and pair a device first.';
+      });
+      return;
+    }
+
     await _refresh();
     _timer = Timer.periodic(const Duration(seconds: 2), (_) => _refresh());
   }
 
   Future<void> _refresh() async {
-    final result = await SystemService.getSystemInfo();
+    final result = await SystemService.getSystemInfo(_ip!, _port!, _token!);
+
     if (!mounted) return;
     setState(() {
       _initialLoading = false;

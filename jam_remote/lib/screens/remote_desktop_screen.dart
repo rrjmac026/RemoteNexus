@@ -24,19 +24,17 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
   double _screenWidth = 1920;
   double _screenHeight = 1080;
 
-  // Local view transform (zoom/pan of the image on screen — never sent to the PC)
   double _viewScale = 1.0;
   Offset _viewOffset = Offset.zero;
   double _scaleStartValue = 1.0;
   Offset _gestureStartFocal = Offset.zero;
   Offset? _pinchAnchorContentPoint;
 
-  // Manual tap/drag/long-press detection (avoids gesture-arena conflicts)
   int _maxPointersSeen = 0;
   double _totalMovement = 0;
   DateTime? _gestureStartTime;
   Offset _lastFocalForMove = Offset.zero;
-  static const double _tapSlop = 12.0; // px of allowed wiggle before it counts as a drag
+  static const double _tapSlop = 12.0;
   static const int _longPressMs = 450;
 
   @override
@@ -65,8 +63,6 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
     );
   }
 
-  /// Computes the actual on-screen rect the image occupies inside [constraints],
-  /// accounting for BoxFit.contain letterboxing, so taps map to the true pixel.
   Rect _imageRectWithin(BoxConstraints constraints) {
     final boxW = constraints.maxWidth;
     final boxH = constraints.maxHeight;
@@ -75,13 +71,11 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
 
     double drawW, drawH, left, top;
     if (boxAspect > imageAspect) {
-      // Box is wider than the image → letterboxed on left/right
       drawH = boxH;
       drawW = boxH * imageAspect;
       left = (boxW - drawW) / 2;
       top = 0;
     } else {
-      // Box is taller than the image → letterboxed on top/bottom
       drawW = boxW;
       drawH = boxW / imageAspect;
       left = 0;
@@ -90,11 +84,9 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
     return Rect.fromLTWH(left, top, drawW, drawH);
   }
 
-  /// Converts a local tap/drag position (already adjusted for local zoom/pan)
-  /// into remote PC pixel coordinates, clamped to the visible image.
   Offset? _toRemoteCoords(Offset localPos, BoxConstraints constraints) {
     final rect = _imageRectWithin(constraints);
-    if (!rect.contains(localPos)) return null; // touched the letterbox bars — ignore
+    if (!rect.contains(localPos)) return null;
 
     final fracX = (localPos.dx - rect.left) / rect.width;
     final fracY = (localPos.dy - rect.top) / rect.height;
@@ -105,8 +97,6 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
     );
   }
 
-  /// Un-transforms a raw pointer position by the current local zoom/pan,
-  /// so gestures work correctly no matter how far you've zoomed in.
   Offset _unTransform(Offset raw) {
     return (raw - _viewOffset) / _viewScale;
   }
@@ -126,7 +116,6 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
     _maxPointersSeen = math.max(_maxPointersSeen, details.pointerCount);
 
     if (details.pointerCount >= 2) {
-      // Pinch-zoom / pan the local view only. Nothing sent to PC.
       setState(() {
         final newScale = (_scaleStartValue * details.scale).clamp(1.0, 5.0);
         final anchor = _pinchAnchorContentPoint ?? Offset.zero;
@@ -137,13 +126,10 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
       return;
     }
 
-    // Single finger: track how far we've moved since the gesture started.
     final delta = (details.localFocalPoint - _lastFocalForMove).distance;
     _totalMovement += delta;
     _lastFocalForMove = details.localFocalPoint;
 
-    // Only start sending live mouse-move once real dragging is detected —
-    // this keeps a clean tap from ever nudging the cursor first.
     if (_totalMovement > _tapSlop) {
       final local = _unTransform(details.localFocalPoint);
       final remote = _toRemoteCoords(local, constraints);
@@ -152,10 +138,7 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
   }
 
   void _onScaleEnd(ScaleEndDetails details, BoxConstraints constraints, Offset lastRawPosition) {
-    // If a second finger ever touched down, this was a pinch/zoom gesture — never a click.
     if (_maxPointersSeen >= 2) return;
-
-    // If we moved past the slop, it was a drag (mouse move already sent live) — not a click.
     if (_totalMovement > _tapSlop) return;
 
     final elapsedMs = _gestureStartTime == null

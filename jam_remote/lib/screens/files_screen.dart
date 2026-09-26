@@ -19,7 +19,7 @@ class _FilesScreenState extends State<FilesScreen> {
   bool _initialLoading = true;
   String? _error;
   Timer? _timer;
-  bool _busyWithAction = false; // pauses polling during create/rename/delete/upload
+  bool _busyWithAction = false;
 
   String? _ip, _port, _token;
 
@@ -47,7 +47,7 @@ class _FilesScreenState extends State<FilesScreen> {
   }
 
   Future<void> _load({required bool silent}) async {
-    if (_busyWithAction) return; // don't refresh mid-operation
+    if (_busyWithAction) return;
 
     if (!silent) {
       setState(() {
@@ -65,11 +65,8 @@ class _FilesScreenState extends State<FilesScreen> {
         _items = items;
         _error = null;
       } else if (!silent || _items == null) {
-        // Only surface the error if we have nothing to show yet,
-        // or this was an explicit (non-background) load.
         _error = 'Could not load directory.';
       }
-      // On a failed silent refresh, keep showing the last known _items.
     });
   }
 

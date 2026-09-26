@@ -88,5 +88,10 @@
     "device_name": "JAM Android",
     "ip": "192.168.115.64",
     "paired_at": 1790460375.6051624
+  },
+  "f8ab13ddf2b9a1348427fd418e813eeddec519aae8892a9b1033f8bac1609c34": {
+    "device_name": "JAM Android",
+    "ip": "192.168.248.64",
+    "paired_at": 1790465889.8546402
   }
 }
