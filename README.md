@@ -1,6 +1,10 @@
-# RemoteNexus (JAM Remote)
+<p align="center">
+  <img src="screenshots/logo.png" width="140" alt="RemoteNexus logo"/>
+</p>
 
-A remote-management app for controlling a Windows PC from Android — terminal, file manager, system monitor, and full remote desktop control, over LAN or the internet.
+<h1 align="center">RemoteNexus</h1>
+
+<p align="center">A remote-management app for controlling a Windows PC from Android — terminal, file manager, system monitor, and full remote desktop control, over LAN or the internet.</p>
 
 <p align="center">
   <img src="screenshots/splash.jpg" width="200" alt="RemoteNexus splash screen"/>
