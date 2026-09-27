@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../services/storage_service.dart';
+import '../services/connection_service.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
@@ -22,17 +20,8 @@ class _LogsScreenState extends State<LogsScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final ip = await StorageService.getSavedIp();
-    final port = await StorageService.getSavedPort();
-    final token = await StorageService.getToken();
-
     try {
-      final response = await http.get(
-        Uri.parse('http://$ip:$port/api/logs'),
-        headers: {'Authorization': 'Bearer $token'},
-      ).timeout(const Duration(seconds: 5));
-
-      final data = jsonDecode(response.body);
+      final data = await ConnectionService.get('/api/logs');
       if (data['success'] == true) {
         setState(() {
           _entries = data['data']['entries'];
@@ -40,9 +29,7 @@ class _LogsScreenState extends State<LogsScreen> {
         });
         return;
       }
-    } catch (e) {
-      // fall through
-    }
+    } catch (e) {}
     setState(() => _loading = false);
   }
 

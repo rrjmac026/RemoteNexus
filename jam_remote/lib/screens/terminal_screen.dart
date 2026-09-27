@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/terminal_service.dart';
-import '../services/storage_service.dart';
 
 class TerminalScreen extends StatefulWidget {
   const TerminalScreen({super.key});
@@ -13,21 +12,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
   final List<String> _lines = ['Connected to JAM-PC', "Type 'help' for a list of commands.", ''];
-
-  String? _ip, _port, _token;
   bool _busy = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCreds();
-  }
-
-  Future<void> _loadCreds() async {
-    _ip = await StorageService.getSavedIp();
-    _port = await StorageService.getSavedPort();
-    _token = await StorageService.getToken();
-  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -53,24 +38,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
     _scrollToBottom();
 
     if (command.toLowerCase() == 'clear') {
-      setState(() {
-        _lines.clear();
-        _busy = false;
-      });
+      setState(() { _lines.clear(); _busy = false; });
       return;
     }
 
-    if (_ip == null || _port == null || _token == null) {
-      setState(() {
-        _lines.add('Not paired. Go back and pair a device first.');
-        _lines.add('');
-        _busy = false;
-      });
-      _scrollToBottom();
-      return;
-    }
-
-    final result = await TerminalService.sendCommand(_ip!, _port!, _token!, command);
+    final result = await TerminalService.sendCommand(command);
 
     setState(() {
       _lines.add(result.output);
@@ -100,12 +72,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
               itemCount: _lines.length,
               itemBuilder: (context, i) => Text(
                 _lines[i],
-                style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  height: 1.4,
-                ),
+                style: const TextStyle(color: Colors.greenAccent, fontFamily: 'monospace', fontSize: 13, height: 1.4),
               ),
             ),
           ),
@@ -114,8 +81,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                const Text('jam> ',
-                    style: TextStyle(color: Colors.greenAccent, fontFamily: 'monospace', fontSize: 14)),
+                const Text('jam> ', style: TextStyle(color: Colors.greenAccent, fontFamily: 'monospace', fontSize: 14)),
                 Expanded(
                   child: TextField(
                     controller: _inputController,
@@ -127,10 +93,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   ),
                 ),
                 if (_busy)
-                  const SizedBox(
-                    width: 16, height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.greenAccent),
-                  ),
+                  const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.greenAccent)),
               ],
             ),
           ),

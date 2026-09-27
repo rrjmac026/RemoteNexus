@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../services/remote_desktop_service.dart';
-import '../services/storage_service.dart';
 
 class RemoteDesktopScreen extends StatefulWidget {
   const RemoteDesktopScreen({super.key});
@@ -44,13 +43,7 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
   }
 
   Future<void> _connect() async {
-    final ip = await StorageService.getSavedIp();
-    final port = await StorageService.getSavedPort();
-    final token = await StorageService.getToken();
-
-    if (ip == null || port == null || token == null) return;
-
-    final ok = await _service.connect(ip, port, token);
+    final ok = await _service.connect();
     setState(() => _connected = ok);
 
     _service.frames.listen(
@@ -100,8 +93,8 @@ class _RemoteDesktopScreenState extends State<RemoteDesktopScreen> {
   Offset _unTransform(Offset raw) {
     return (raw - _viewOffset) / _viewScale;
   }
-  
-    void _onScaleStart(ScaleStartDetails details) {
+
+  void _onScaleStart(ScaleStartDetails details) {
     _scaleStartValue = _viewScale;
     _gestureStartFocal = details.localFocalPoint;
     _lastFocalForMove = details.localFocalPoint;

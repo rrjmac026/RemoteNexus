@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, Request
 from pydantic import BaseModel
 from app.authentication import create_pairing_request, get_request_status, is_token_valid
 
@@ -7,12 +7,12 @@ router = APIRouter()
 
 class PairRequest(BaseModel):
     device_name: str
-    ip: str
 
 
 @router.post("/api/auth/pair")
-def request_pairing(body: PairRequest):
-    result = create_pairing_request(body.device_name, body.ip)
+def request_pairing(body: PairRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    result = create_pairing_request(body.device_name, client_ip)
     return {"success": True, "data": result}
 
 

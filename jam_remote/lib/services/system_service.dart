@@ -1,17 +1,9 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import '../services/connection_service.dart';
 
 class SystemService {
-  static Future<Map<String, dynamic>?> _get(
-      String ip, String port, String path, String token) async {
-    final url = Uri.parse('http://$ip:$port$path');
+  static Future<Map<String, dynamic>?> _get(String path) async {
     try {
-      final response = await http.get(
-        url,
-        headers: {'Authorization': 'Bearer $token'},
-      ).timeout(const Duration(seconds: 5));
-
-      final data = jsonDecode(response.body);
+      final data = await ConnectionService.get(path);
       if (data['success'] == true) {
         return data['data'] as Map<String, dynamic>;
       }
@@ -21,12 +13,7 @@ class SystemService {
     }
   }
 
-  static Future<Map<String, dynamic>?> getSystemInfo(String ip, String port, String token) =>
-      _get(ip, port, '/api/system', token);
-
-  static Future<Map<String, dynamic>?> getNetworkInfo(String ip, String port, String token) =>
-      _get(ip, port, '/api/network', token);
-
-  static Future<Map<String, dynamic>?> getServerInfo(String ip, String port, String token) =>
-      _get(ip, port, '/api/server', token);
+  static Future<Map<String, dynamic>?> getSystemInfo() => _get('/api/system');
+  static Future<Map<String, dynamic>?> getNetworkInfo() => _get('/api/network');
+  static Future<Map<String, dynamic>?> getServerInfo() => _get('/api/server');
 }

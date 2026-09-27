@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/system_service.dart';
-import '../services/storage_service.dart';
 import 'terminal_screen.dart';
 import 'files_screen.dart';
 import 'processes_screen.dart';
@@ -22,10 +21,6 @@ class _SystemScreenState extends State<SystemScreen> {
   String? _error;
   Timer? _timer;
 
-  String? _ip;
-  String? _port;
-  String? _token;
-
   @override
   void initState() {
     super.initState();
@@ -33,25 +28,12 @@ class _SystemScreenState extends State<SystemScreen> {
   }
 
   Future<void> _init() async {
-    _ip = await StorageService.getSavedIp();
-    _port = await StorageService.getSavedPort();
-    _token = await StorageService.getToken();
-
-    if (_ip == null || _port == null || _token == null) {
-      setState(() {
-        _initialLoading = false;
-        _error = 'Not paired. Go back and pair a device first.';
-      });
-      return;
-    }
-
     await _refresh();
     _timer = Timer.periodic(const Duration(seconds: 2), (_) => _refresh());
   }
 
   Future<void> _refresh() async {
-    final result = await SystemService.getSystemInfo(_ip!, _port!, _token!);
-
+    final result = await SystemService.getSystemInfo();
     if (!mounted) return;
     setState(() {
       _initialLoading = false;
@@ -86,51 +68,35 @@ class _SystemScreenState extends State<SystemScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-            title: const Text('System'),
-            actions: [
-            IconButton(
-                icon: const Icon(Icons.terminal),
-                onPressed: () {
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const TerminalScreen()),
-                );
-                },
-            ),
-            IconButton(
-                icon: const Icon(Icons.folder),
-                onPressed: () {
-                    Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const FilesScreen()),
-                    );
-                },
-            ),
-            IconButton(
-                icon: const Icon(Icons.list_alt),
-                onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ProcessesScreen()),
-                ),
-            ),
-                IconButton(
-                icon: const Icon(Icons.build),
-                onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ServicesScreen()),
-                ),
-            ),
-                IconButton(
-                icon: const Icon(Icons.receipt_long),
-                onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const LogsScreen()),
-                ),
-            ),
-            IconButton(
-                icon: const Icon(Icons.desktop_windows),
-                onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const RemoteDesktopScreen()),
-                ),
-            ),
-            ],
-        ),
+      appBar: AppBar(
+        title: const Text('System'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.terminal),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TerminalScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.folder),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FilesScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.list_alt),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProcessesScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.build),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ServicesScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.receipt_long),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogsScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.desktop_windows),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RemoteDesktopScreen())),
+          ),
+        ],
+      ),
       body: _initialLoading
           ? const Center(child: CircularProgressIndicator())
           : _info == null

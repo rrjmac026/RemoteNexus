@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../services/storage_service.dart';
+import '../services/connection_service.dart';
 
 class ProcessesScreen extends StatefulWidget {
   const ProcessesScreen({super.key});
@@ -15,7 +13,6 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
   List<dynamic>? _processes;
   bool _loading = true;
   Timer? _timer;
-  String? _ip, _port, _token;
 
   @override
   void initState() {
@@ -24,22 +21,13 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
   }
 
   Future<void> _init() async {
-    _ip = await StorageService.getSavedIp();
-    _port = await StorageService.getSavedPort();
-    _token = await StorageService.getToken();
     await _load();
     _timer = Timer.periodic(const Duration(seconds: 4), (_) => _load());
   }
 
   Future<void> _load() async {
-    if (_ip == null) return;
     try {
-      final response = await http.get(
-        Uri.parse('http://$_ip:$_port/api/processes'),
-        headers: {'Authorization': 'Bearer $_token'},
-      ).timeout(const Duration(seconds: 5));
-
-      final data = jsonDecode(response.body);
+      final data = await ConnectionService.get('/api/processes');
       if (data['success'] == true && mounted) {
         setState(() {
           _processes = data['data']['processes'];

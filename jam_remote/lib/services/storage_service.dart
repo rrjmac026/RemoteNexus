@@ -17,4 +17,9 @@ class StorageService {
 
   static Future<String?> getSavedIp() => _storage.read(key: _ipKey);
   static Future<String?> getSavedPort() => _storage.read(key: _portKey);
+
+  static const _remoteUrlKey = 'remote_url';
+
+  static Future<void> saveRemoteUrl(String url) => _storage.write(key: _remoteUrlKey, value: url);
+  static Future<String?> getSavedRemoteUrl() => _storage.read(key: _remoteUrlKey);
 }

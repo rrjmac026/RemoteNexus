@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../services/connection_service.dart';
 import 'pairing_screen.dart';
 
 class ConnectionScreen extends StatefulWidget {
@@ -12,9 +12,11 @@ class ConnectionScreen extends StatefulWidget {
 class _ConnectionScreenState extends State<ConnectionScreen> {
   final _ipController = TextEditingController(text: '192.168.1.20');
   final _portController = TextEditingController(text: '8080');
+  final _remoteUrlController = TextEditingController();
 
   bool _isConnecting = false;
   bool? _isConnected;
+  bool _remoteMode = false;
 
   Future<void> _connect() async {
     setState(() {
@@ -22,10 +24,22 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       _isConnected = null;
     });
 
-    final success = await ApiService.checkHealth(
-      _ipController.text.trim(),
-      _portController.text.trim(),
-    );
+    if (_remoteMode) {
+      final url = _remoteUrlController.text.trim();
+      await ConnectionService.setRemoteConnection(url);
+    } else {
+      final ip = _ipController.text.trim();
+      final port = _portController.text.trim();
+      await ConnectionService.setLocalConnection(ip, port);
+    }
+
+    bool success;
+    try {
+      final data = await ConnectionService.get('/api/health');
+      success = data['success'] == true;
+    } catch (e) {
+      success = false;
+    }
 
     setState(() {
       _isConnecting = false;
@@ -35,10 +49,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   void _goToPairing() {
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => PairingScreen(
-        ip: _ipController.text.trim(),
-        port: _portController.text.trim(),
-      ),
+      builder: (_) => const PairingScreen(),
     ));
   }
 
@@ -53,17 +64,43 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           children: [
             const Text('Connect to Computer',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _ipController,
-              decoration: const InputDecoration(labelText: 'IP Address', border: OutlineInputBorder()),
-            ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _portController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Port', border: OutlineInputBorder()),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: false, label: Text('Local Network')),
+                ButtonSegment(value: true, label: Text('Remote (Internet)')),
+              ],
+              selected: {_remoteMode},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  _remoteMode = selection.first;
+                  _isConnected = null;
+                });
+              },
             ),
+            const SizedBox(height: 24),
+            if (!_remoteMode) ...[
+              TextField(
+                controller: _ipController,
+                decoration: const InputDecoration(labelText: 'IP Address', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _portController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Port', border: OutlineInputBorder()),
+              ),
+            ] else ...[
+              TextField(
+                controller: _remoteUrlController,
+                keyboardType: TextInputType.url,
+                decoration: const InputDecoration(
+                  labelText: 'Tunnel URL',
+                  hintText: 'https://your-tunnel.trycloudflare.com',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isConnecting ? null : _connect,
@@ -79,7 +116,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
               ),
             ],
             if (_isConnected == false)
-              const Text('🔴 Connection failed. Check IP/port and try again.', style: TextStyle(color: Colors.red)),
+              const Text('🔴 Connection failed. Check your details and try again.', style: TextStyle(color: Colors.red)),
           ],
         ),
       ),

@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:open_filex/open_filex.dart';
 import '../models/file_item.dart';
 import '../services/file_service.dart';
-import '../services/storage_service.dart';
 
 class FilesScreen extends StatefulWidget {
   const FilesScreen({super.key});
@@ -21,8 +19,6 @@ class _FilesScreenState extends State<FilesScreen> {
   Timer? _timer;
   bool _busyWithAction = false;
 
-  String? _ip, _port, _token;
-
   @override
   void initState() {
     super.initState();
@@ -30,43 +26,21 @@ class _FilesScreenState extends State<FilesScreen> {
   }
 
   Future<void> _init() async {
-    _ip = await StorageService.getSavedIp();
-    _port = await StorageService.getSavedPort();
-    _token = await StorageService.getToken();
-
-    if (_ip == null || _port == null || _token == null) {
-      setState(() {
-        _initialLoading = false;
-        _error = 'Not paired.';
-      });
-      return;
-    }
-
     await _load(silent: false);
     _timer = Timer.periodic(const Duration(seconds: 3), (_) => _load(silent: true));
   }
 
   Future<void> _load({required bool silent}) async {
     if (_busyWithAction) return;
+    if (!silent) setState(() { _initialLoading = true; _error = null; });
 
-    if (!silent) {
-      setState(() {
-        _initialLoading = true;
-        _error = null;
-      });
-    }
-
-    final items = await FileService.listDirectory(_ip!, _port!, _token!, _currentPath);
+    final items = await FileService.listDirectory(_currentPath);
     if (!mounted) return;
 
     setState(() {
       _initialLoading = false;
-      if (items != null) {
-        _items = items;
-        _error = null;
-      } else if (!silent || _items == null) {
-        _error = 'Could not load directory.';
-      }
+      if (items != null) { _items = items; _error = null; }
+      else if (!silent || _items == null) { _error = 'Could not load directory.'; }
     });
   }
 
@@ -77,9 +51,7 @@ class _FilesScreenState extends State<FilesScreen> {
   }
 
   void _enterFolder(String name) {
-    setState(() {
-      _currentPath = _currentPath.isEmpty ? name : '$_currentPath/$name';
-    });
+    setState(() => _currentPath = _currentPath.isEmpty ? name : '$_currentPath/$name');
     _load(silent: false);
   }
 
@@ -104,10 +76,9 @@ class _FilesScreenState extends State<FilesScreen> {
       ),
     );
     if (name == null || name.isEmpty) return;
-
     _busyWithAction = true;
     final path = _currentPath.isEmpty ? name : '$_currentPath/$name';
-    final result = await FileService.createDirectory(_ip!, _port!, _token!, path);
+    final result = await FileService.createDirectory(path);
     _busyWithAction = false;
     _showSnack(result.message);
     if (result.success) _load(silent: false);
@@ -127,10 +98,9 @@ class _FilesScreenState extends State<FilesScreen> {
       ),
     );
     if (newName == null || newName.isEmpty || newName == item.name) return;
-
     _busyWithAction = true;
     final path = _currentPath.isEmpty ? item.name : '$_currentPath/${item.name}';
-    final result = await FileService.rename(_ip!, _port!, _token!, path, newName);
+    final result = await FileService.rename(path, newName);
     _busyWithAction = false;
     _showSnack(result.message);
     if (result.success) _load(silent: false);
@@ -144,18 +114,14 @@ class _FilesScreenState extends State<FilesScreen> {
         content: Text(item.name),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('DELETE', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
     if (confirmed != true) return;
-
     _busyWithAction = true;
     final path = _currentPath.isEmpty ? item.name : '$_currentPath/${item.name}';
-    final result = await FileService.delete(_ip!, _port!, _token!, path);
+    final result = await FileService.delete(path);
     _busyWithAction = false;
     _showSnack(result.message);
     if (result.success) _load(silent: false);
@@ -164,20 +130,18 @@ class _FilesScreenState extends State<FilesScreen> {
   Future<void> _download(FileItem item) async {
     final path = _currentPath.isEmpty ? item.name : '$_currentPath/${item.name}';
     _showSnack('Downloading ${item.name}...');
-    final result = await FileService.downloadFile(_ip!, _port!, _token!, path, item.name);
+    final result = await FileService.downloadFile(path, item.name);
     _showSnack(result.message);
   }
 
   Future<void> _upload() async {
     final picked = await FilePicker.platform.pickFiles();
     if (picked == null || picked.files.isEmpty) return;
-
     final file = picked.files.first;
     if (file.path == null) return;
-
     _busyWithAction = true;
     _showSnack('Uploading ${file.name}...');
-    final result = await FileService.uploadFile(_ip!, _port!, _token!, file.path!, file.name);
+    final result = await FileService.uploadFile(file.path!, file.name);
     _busyWithAction = false;
     _showSnack(result.message);
     if (result.success) _load(silent: false);
@@ -193,9 +157,7 @@ class _FilesScreenState extends State<FilesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_currentPath.isEmpty ? 'Files' : _currentPath),
-        leading: _currentPath.isEmpty
-            ? null
-            : IconButton(icon: const Icon(Icons.arrow_back), onPressed: _goUp),
+        leading: _currentPath.isEmpty ? null : IconButton(icon: const Icon(Icons.arrow_back), onPressed: _goUp),
         actions: [
           IconButton(icon: const Icon(Icons.create_new_folder), onPressed: _createFolder),
           IconButton(icon: const Icon(Icons.upload_file), onPressed: _upload),
@@ -234,8 +196,7 @@ class _FilesScreenState extends State<FilesScreen> {
                                       if (value == 'download') _download(item);
                                     },
                                     itemBuilder: (context) => [
-                                      if (!item.isDirectory)
-                                        const PopupMenuItem(value: 'download', child: Text('Download')),
+                                      if (!item.isDirectory) const PopupMenuItem(value: 'download', child: Text('Download')),
                                       const PopupMenuItem(value: 'rename', child: Text('Rename')),
                                       const PopupMenuItem(value: 'delete', child: Text('Delete')),
                                     ],

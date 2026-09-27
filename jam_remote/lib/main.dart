@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'screens/connection_screen.dart';
+import 'services/connection_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ConnectionService.load();
   runApp(const JamRemoteApp());
 }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'connection_service.dart';
 
 class RemoteDesktopService {
   WebSocketChannel? _channel;
@@ -8,20 +9,16 @@ class RemoteDesktopService {
 
   Stream<String> get frames => _frameController.stream;
 
-  Future<bool> connect(String ip, String port, String token) async {
+  Future<bool> connect() async {
     try {
-      final uri = Uri.parse('ws://$ip:$port/ws/remote-desktop');
-      _channel = WebSocketChannel.connect(uri);
-
-      _channel!.sink.add(jsonEncode({'token': token}));
+      _channel = ConnectionService.connectWebSocket('/ws/remote-desktop');
+      _channel!.sink.add(jsonEncode({'token': ConnectionService.token}));
 
       _channel!.stream.listen(
         (message) {
           try {
             final data = jsonDecode(message);
-            if (data['type'] == 'frame') {
-              _frameController.add(data['data']);
-            }
+            if (data['type'] == 'frame') _frameController.add(data['data']);
           } catch (_) {}
         },
         onDone: () => _frameController.addError('disconnected'),
