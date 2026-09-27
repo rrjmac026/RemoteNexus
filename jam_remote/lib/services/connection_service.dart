@@ -10,7 +10,7 @@ class ConnectionService {
   static String? _ip;
   static String? _port;
   static String? _token;
-  static String? _remoteUrl; // e.g. https://parenting-humor-rise-update.trycloudflare.com
+  static String? _remoteUrl;
 
   static ConnectionMode get mode => _mode;
 
@@ -30,7 +30,6 @@ class ConnectionService {
 
   static Future<void> setRemoteConnection(String url) async {
     _mode = ConnectionMode.remote;
-    // Strip trailing slash so path-joining below is consistent.
     _remoteUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
     await StorageService.saveRemoteUrl(_remoteUrl!);
   }
@@ -47,7 +46,7 @@ class ConnectionService {
       case ConnectionMode.local:
         return 'http://$_ip:$_port';
       case ConnectionMode.remote:
-        return _remoteUrl!; // already https://...
+        return _remoteUrl!;
     }
   }
 
@@ -56,7 +55,6 @@ class ConnectionService {
       case ConnectionMode.local:
         return 'ws://$_ip:$_port';
       case ConnectionMode.remote:
-        // Swap https -> wss for the websocket.
         return _remoteUrl!.replaceFirst('https://', 'wss://');
     }
   }
@@ -102,9 +100,10 @@ class ConnectionService {
 
   static Future<http.Response> multipart(
       String path, String fileField, String filePath, String fileName,
-      {Duration timeout = const Duration(seconds: 60)}) async {
+      {Map<String, String>? fields, Duration timeout = const Duration(seconds: 60)}) async {
     final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl$path'));
     request.headers['Authorization'] = 'Bearer $_token';
+    if (fields != null) request.fields.addAll(fields);
     request.files.add(await http.MultipartFile.fromPath(fileField, filePath, filename: fileName));
     final streamed = await request.send().timeout(timeout);
     return http.Response.fromStream(streamed);

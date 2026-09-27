@@ -24,4 +24,15 @@ class AuthenticationService {
       return {'status': 'error', 'token': null};
     }
   }
+
+  /// Returns true if we already have a saved token AND the server still recognizes it.
+  static Future<bool> isAlreadyPaired() async {
+    if (ConnectionService.token == null) return false;
+    try {
+      final data = await ConnectionService.get('/api/auth/check');
+      return data['success'] == true && data['data']['valid'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
 }

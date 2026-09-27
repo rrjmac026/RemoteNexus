@@ -14,7 +14,7 @@ class JamRemoteApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'JAM Remote',
+      title: 'Remote Nexus',
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.indigo,

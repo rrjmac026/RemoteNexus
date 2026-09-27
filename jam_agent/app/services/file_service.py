@@ -14,11 +14,6 @@ def _get_shared_root() -> Path:
     return Path(config["shared_directory"]).resolve()
 
 
-def _get_upload_root() -> Path:
-    config = load_config()
-    return Path(config["upload_directory"]).resolve()
-
-
 def resolve_safe_path(relative_path: str) -> Path:
     """
     Resolves a client-supplied relative path against the shared root,
@@ -100,14 +95,17 @@ def get_file_path_for_download(relative_path: str) -> Path:
     return target
 
 
-def save_uploaded_file(filename: str, content: bytes) -> str:
+def save_uploaded_file(relative_dir: str, filename: str, content: bytes) -> str:
     if "/" in filename or "\\" in filename:
         raise PathSecurityError("Filename must not contain path separators.")
 
-    upload_root = _get_upload_root()
-    upload_root.mkdir(parents=True, exist_ok=True)
+    target_dir = resolve_safe_path(relative_dir)
+    if not target_dir.exists():
+        raise FileNotFoundError(f"Target directory not found: {relative_dir}")
+    if not target_dir.is_dir():
+        raise NotADirectoryError(f"Not a directory: {relative_dir}")
 
-    destination = upload_root / filename
+    destination = target_dir / filename
     with open(destination, "wb") as f:
         f.write(content)
 

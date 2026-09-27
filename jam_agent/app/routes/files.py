@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Header, HTTPException, UploadFile, File, Query, Form
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -66,15 +66,23 @@ def download_file(path: str = Query(...), authorization: str = Header(default=""
 
 
 @router.post("/api/files/upload")
-async def upload_file(file: UploadFile = File(...), authorization: str = Header(default="")):
+async def upload_file(
+    file: UploadFile = File(...),
+    path: str = Form(default=""),
+    authorization: str = Header(default=""),
+):
     require_auth(authorization)
     try:
         content = await file.read()
-        saved_path = file_service.save_uploaded_file(file.filename, content)
-        log_event(f"Uploaded:\n{file.filename}")
+        saved_path = file_service.save_uploaded_file(path, file.filename, content)
+        log_event(f"Uploaded:\n{saved_path}")
         return {"success": True, "data": {"saved_to": saved_path, "size": len(content)}}
     except file_service.PathSecurityError as e:
         error_response("INVALID_FILENAME", str(e), 400)
+    except FileNotFoundError:
+        error_response("NOT_FOUND", "Target directory not found.", 404)
+    except NotADirectoryError:
+        error_response("NOT_A_DIRECTORY", "Target path is not a directory.", 400)
 
 
 @router.post("/api/files/directory")

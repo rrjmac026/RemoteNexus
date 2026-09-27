@@ -53,9 +53,12 @@ class FileService {
     }
   }
 
-  static Future<FileOpResult> uploadFile(String filePath, String fileName) async {
+  static Future<FileOpResult> uploadFile(String targetDir, String filePath, String fileName) async {
     try {
-      final response = await ConnectionService.multipart('/api/files/upload', 'file', filePath, fileName);
+      final response = await ConnectionService.multipart(
+        '/api/files/upload', 'file', filePath, fileName,
+        fields: {'path': targetDir},
+      );
       final data = jsonDecode(response.body);
       if (data['success'] == true) return FileOpResult(true, 'Uploaded.');
       return FileOpResult(false, data['error']?['message'] ?? 'Upload failed.');

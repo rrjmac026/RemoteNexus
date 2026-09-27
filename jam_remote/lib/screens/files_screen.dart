@@ -141,7 +141,7 @@ class _FilesScreenState extends State<FilesScreen> {
     if (file.path == null) return;
     _busyWithAction = true;
     _showSnack('Uploading ${file.name}...');
-    final result = await FileService.uploadFile(file.path!, file.name);
+    final result = await FileService.uploadFile(_currentPath, file.path!, file.name);
     _busyWithAction = false;
     _showSnack(result.message);
     if (result.success) _load(silent: false);
