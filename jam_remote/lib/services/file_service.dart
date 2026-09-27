@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/file_item.dart';
 import '../services/connection_service.dart';
@@ -7,7 +8,8 @@ import '../services/connection_service.dart';
 class FileOpResult {
   final bool success;
   final String message;
-  FileOpResult(this.success, this.message);
+  final String? savedPath;
+  FileOpResult(this.success, this.message, {this.savedPath});
 }
 
 class FileService {
@@ -67,6 +69,7 @@ class FileService {
     }
   }
 
+  /// Downloads the file to a temp/cache location on the phone.
   static Future<FileOpResult> downloadFile(String remotePath, String fileName) async {
     try {
       final response = await ConnectionService.getRaw(
@@ -78,11 +81,34 @@ class FileService {
         final savePath = '${dir.path}/$fileName';
         final file = File(savePath);
         await file.writeAsBytes(response.bodyBytes);
-        return FileOpResult(true, 'Saved to $savePath');
+        return FileOpResult(true, 'Saved to $savePath', savedPath: savePath);
       }
       return FileOpResult(false, 'Download failed.');
     } catch (e) {
       return FileOpResult(false, 'Connection error.');
+    }
+  }
+
+  /// Downloads (if not already cached) then opens the file in the phone's
+  /// default app for that type — photo viewer, PDF reader, video player, etc.
+  static Future<FileOpResult> openFile(String remotePath, String fileName) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final localPath = '${dir.path}/$fileName';
+    final localFile = File(localPath);
+
+    // Reuse the cached copy if we already downloaded it, otherwise fetch it.
+    if (!await localFile.exists()) {
+      final result = await downloadFile(remotePath, fileName);
+      if (!result.success) return result;
+    }
+
+    final openResult = await OpenFilex.open(localPath);
+    if (openResult.type == ResultType.done) {
+      return FileOpResult(true, 'Opened.');
+    } else {
+      return FileOpResult(false, openResult.message.isNotEmpty
+          ? openResult.message
+          : 'No app found to open this file type.');
     }
   }
 }
